@@ -42,6 +42,44 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET') {
         const url = new URL(req.url, `http://${req.headers.host}`);
 
+        // Check if it's a SQL query request via URL path
+        if (url.pathname.includes('/lab5/api/v1/sql/')) {
+            try {
+                // Extract SQL query from URL path
+                const sqlPath = url.pathname.split('/lab5/api/v1/sql/')[1];
+                const query = decodeURIComponent(sqlPath).replace(/"/g, '');
+
+                // For URL-based queries, only allow SELECT
+                if (!query.trim().toUpperCase().startsWith('SELECT')) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'Only SELECT queries allowed via GET URL' }));
+                    return;
+                }
+
+                // Validate query before executing
+                const validation = QueryValidator.isValid(query);
+                if (!validation.valid) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: validation.message }));
+                    return;
+                }
+
+                // Execute the query and return results
+                const result = await db.executeQuery(query);
+
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                    message: MESSAGES.QUERY_SUCCESS,
+                    result
+                }));
+            } catch (error) {
+                console.error('Error handling GET SQL request:', error);
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: MESSAGES.QUERY_FAILED }));
+            }
+            return;
+        }
+
         // Check if it's a regular GET with query in body (from frontend)
         if (url.pathname === '/' && req.headers['content-type'] === 'text/plain') {
             let body = '';
