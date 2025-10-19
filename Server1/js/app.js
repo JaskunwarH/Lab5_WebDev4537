@@ -170,13 +170,8 @@ class PatientDatabaseApp {
             }
         };
 
-        if (method === 'POST') {
-            options.body = query;
-        } else {
-            // For GET requests, we'll still send as POST since the server expects POST for queries
-            options.method = 'POST';
-            options.body = query;
-        }
+        // Always include the query in the body for both GET and POST
+        options.body = query;
 
         const response = await fetch(this.serverUrl, options);
 

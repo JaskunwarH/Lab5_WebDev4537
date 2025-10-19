@@ -5,6 +5,7 @@
 */
 
 import http from 'http';
+import { URL } from 'url';
 import DBManager from './dbManager.js';
 import QueryValidator from './queryValidator.js';
 import MESSAGES from './lang/messages/en.js';
@@ -37,8 +38,55 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-    // Handle GET request – used to check if the server is online
+    // Handle GET request
     if (req.method === 'GET') {
+        const url = new URL(req.url, `http://${req.headers.host}`);
+
+        // Check if it's a regular GET with query in body (from frontend)
+        if (url.pathname === '/' && req.headers['content-type'] === 'text/plain') {
+            let body = '';
+
+            req.on('data', chunk => {
+                body += chunk.toString();
+            });
+
+            req.on('end', async () => {
+                try {
+                    const query = body.trim();
+
+                    // For body-based GET, only allow SELECT
+                    if (!query.trim().toUpperCase().startsWith('SELECT')) {
+                        res.writeHead(400, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ error: 'Only SELECT queries allowed via GET' }));
+                        return;
+                    }
+
+                    // Validate query before executing
+                    const validation = QueryValidator.isValid(query);
+                    if (!validation.valid) {
+                        res.writeHead(400, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ error: validation.message }));
+                        return;
+                    }
+
+                    // Execute the query and return results
+                    const result = await db.executeQuery(query);
+
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({
+                        message: MESSAGES.QUERY_SUCCESS,
+                        result
+                    }));
+                } catch (error) {
+                    console.error('Error handling GET request:', error);
+                    res.writeHead(500, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: MESSAGES.QUERY_FAILED }));
+                }
+            });
+            return;
+        }
+
+        // Default GET response - server status check
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ message: MESSAGES.SERVER_RUNNING }));
         return;
@@ -58,7 +106,14 @@ const server = http.createServer(async (req, res) => {
             try {
                 const query = body.trim();
 
-                // Check if the query is safe (only SELECT or INSERT)
+                // For POST requests, only allow INSERT queries
+                if (!query.trim().toUpperCase().startsWith('INSERT')) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'Only INSERT queries allowed via POST' }));
+                    return;
+                }
+
+                // Check if the query is safe (only INSERT)
                 const validation = QueryValidator.isValid(query);
                 if (!validation.valid) {
                     res.writeHead(400, { 'Content-Type': 'application/json' });
