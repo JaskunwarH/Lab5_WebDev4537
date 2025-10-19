@@ -163,6 +163,8 @@ class PatientDatabaseApp {
      * Send HTTP request to the server
      */
     async sendRequest(method, query) {
+        let url = this.serverUrl;
+
         const options = {
             method: method,
             headers: {
@@ -170,10 +172,16 @@ class PatientDatabaseApp {
             }
         };
 
-        // Always include the query in the body for both GET and POST
-        options.body = query;
+        if (method === 'GET') {
+            // For GET requests, send query in URL path (since GET can't have body)
+            url = `${this.serverUrl}/lab5/api/v1/sql/"${encodeURIComponent(query)}"`;
+            // Don't include body for GET requests
+        } else {
+            // POST requests send query in body to base URL
+            options.body = query;
+        }
 
-        const response = await fetch(this.serverUrl, options);
+        const response = await fetch(url, options);
 
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
