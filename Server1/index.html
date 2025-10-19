@@ -1,10 +1,41 @@
+<!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Patient Database Management</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script type="module" src="js/app.js"></script>
 </head>
+
 <body>
-    
+    <div class="container">
+        <h1 id="headerTitle">Patient Database Management</h1>
+
+        <!-- Sample Data Insertion Section -->
+        <div class="section">
+            <h2>Sample Data Insertion</h2>
+            <p class="instruction" id="instructionSample">Click the button below to insert sample patient data.</p>
+            <button id="btnInsertSample">Insert Sample Patients</button>
+            <div id="sampleResults" class="results" style="display: none;"></div>
+        </div>
+
+        <!-- SQL Query Section -->
+        <div class="section">
+            <h2>SQL Query Execution</h2>
+            <p class="instruction" id="instructionQuery">Enter SELECT queries to read data or INSERT queries to add new
+                patients.</p>
+
+            <label for="sqlQuery" id="labelQuery">Enter SQL Query:</label>
+            <textarea id="sqlQuery" placeholder="Enter your SELECT or INSERT query here..."></textarea>
+
+            <button id="btnExecuteQuery">Execute Query</button>
+
+            <label id="labelResults">Results:</label>
+            <div id="queryResults" class="results"></div>
+        </div>
+    </div>
 </body>
+
 </html>
