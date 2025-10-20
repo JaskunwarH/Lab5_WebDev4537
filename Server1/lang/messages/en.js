@@ -1,6 +1,7 @@
 /*
     Author: Jaskunwar Hunjan and Daniel Wang
-    English messages for the frontend application
+    ChatGPT-5 (https://chat.openai.com/) and GitHub Copilot GPT-4.1 was used to assist
+    with coding and commenting of this file.
 */
 
 const MESSAGES = {
