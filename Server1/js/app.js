@@ -11,7 +11,8 @@ import MESSAGES from '../lang/messages/en.js';
  */
 class PatientDatabaseApp {
     constructor() {
-        this.serverUrl = 'http://localhost:8080';
+        // this.serverUrl = 'http://localhost:8080';
+        this.serverUrl = 'https://jaskunwar-danton-lab5-server2.onrender.com';
         this.samplePatients = [
             "('Sara Brown', '1901-01-01')",
             "('John Smith', '1941-01-01')",
