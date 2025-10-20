@@ -9,55 +9,56 @@ import DBManager from './dbManager.js';
 import QueryValidator from './queryValidator.js';
 import MESSAGES from './lang/messages/en.js';
 
-/**
- * app.js
- * This file creates the backend HTTP server for Lab 5.
- * - Handles GET (server status) and POST (SQL query) requests.
- * - Uses DBManager to interact with MySQL.
- * - Uses QueryValidator to block unsafe queries.
- * - Sends responses in JSON format.
- */
+/*
+    This file creates the backend server for Lab 5.
+    The server listens for requests from the frontend (Server 1).
+    - GET is used to check if the server is running.
+    - POST is used to receive SQL queries and run them on the database.
+    - It also checks if a query is safe before executing it.
+*/
 
-// Create one database manager for the whole server
+// Create one database connection using the DBManager class
 const db = new DBManager();
+
+// The port number our server will run on
 const PORT = 8080;
 
-// Create HTTP server using Node's built-in 'http' module
+// Create the HTTP server
 const server = http.createServer(async (req, res) => {
-    // Enable CORS so Server1 (frontend) can access this backend
+    // Allow requests from other origins (CORS)
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    // Handle preflight (OPTIONS) requests
+    // Handle the browser’s preflight OPTIONS request
     if (req.method === 'OPTIONS') {
         res.writeHead(204);
         res.end();
         return;
     }
 
-    // Handle GET request — basic server check
+    // Handle GET request – used to check if the server is online
     if (req.method === 'GET') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ message: MESSAGES.SERVER_RUNNING }));
         return;
     }
 
-    // Handle POST request — executes SQL queries
+    // Handle POST request – this is where the frontend sends SQL queries
     if (req.method === 'POST') {
         let body = '';
 
-        // Collect data from the request
+        // Read data that comes from the frontend
         req.on('data', chunk => {
             body += chunk.toString();
         });
 
-        // Once all data is received
+        // Once all data is received, run this part
         req.on('end', async () => {
             try {
                 const query = body.trim();
 
-                // Validate query before executing
+                // Check if the query is safe (only SELECT or INSERT)
                 const validation = QueryValidator.isValid(query);
                 if (!validation.valid) {
                     res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -65,28 +66,30 @@ const server = http.createServer(async (req, res) => {
                     return;
                 }
 
-                // Execute the query and return results
+                // Run the query in the database
                 const result = await db.executeQuery(query);
 
+                // Send back the results to the frontend
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({
                     message: MESSAGES.QUERY_SUCCESS,
                     result
                 }));
             } catch (error) {
+                // If something goes wrong, send an error message
                 console.error('Error handling POST request:', error);
                 res.writeHead(500, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ error: MESSAGES.QUERY_FAILED }));
             }
         });
     } else {
-        // Any other HTTP method → not supported
+        // Any other request type (like PUT or DELETE) is not allowed
         res.writeHead(405, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Method not allowed' }));
     }
 });
 
-// Start listening on the specified port
+// Start the server and print a message to show it’s running
 server.listen(PORT, () => {
     console.log(MESSAGES.SERVER_RUNNING);
 });
