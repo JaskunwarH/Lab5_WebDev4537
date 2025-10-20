@@ -86,7 +86,6 @@ class PatientDatabaseApp {
             this.setButtonState(this.elements.btnInsertSample, false, MESSAGES.INFO_INSERTING);
             this.showResult(this.elements.sampleResults, MESSAGES.INFO_INSERTING, 'info');
 
-            // Create INSERT query for all sample patients
             const insertQuery = `INSERT INTO patient (name, dateOfBirth) VALUES ${this.samplePatients.join(', ')};`;
 
             const response = await this.sendRequest('POST', insertQuery);
@@ -94,10 +93,12 @@ class PatientDatabaseApp {
             if (response.error) {
                 this.showResult(this.elements.sampleResults, `${MESSAGES.ERROR_SERVER}: ${response.error}`, 'error');
             } else {
-                this.showResult(this.elements.sampleResults,
-                    `${MESSAGES.SUCCESS_SAMPLE_INSERTED}\n${JSON.stringify(response, null, 2)}`, 'success');
+                this.showResult(
+                    this.elements.sampleResults,
+                    `${MESSAGES.SUCCESS_SAMPLE_INSERTED}\n${JSON.stringify(response, null, 2)}`,
+                    'success'
+                );
             }
-
         } catch (error) {
             this.showResult(this.elements.sampleResults, `${MESSAGES.ERROR_NETWORK}: ${error.message}`, 'error');
         } finally {
@@ -125,17 +126,18 @@ class PatientDatabaseApp {
             this.setButtonState(this.elements.btnExecuteQuery, false, MESSAGES.INFO_EXECUTING);
             this.showResult(this.elements.queryResults, MESSAGES.INFO_EXECUTING, 'info');
 
-            // Determine HTTP method based on query type
-            const method = this.getHttpMethod(query);
-            const response = await this.sendRequest(method, query);
+            // Always send as POST body (Render blocks SQL keywords in URL)
+            const response = await this.sendRequest('POST', query);
 
             if (response.error) {
                 this.showResult(this.elements.queryResults, `${MESSAGES.ERROR_SERVER}: ${response.error}`, 'error');
             } else {
-                this.showResult(this.elements.queryResults,
-                    `${MESSAGES.SUCCESS_QUERY_EXECUTED}\n${JSON.stringify(response, null, 2)}`, 'success');
+                this.showResult(
+                    this.elements.queryResults,
+                    `${MESSAGES.SUCCESS_QUERY_EXECUTED}\n${JSON.stringify(response, null, 2)}`,
+                    'success'
+                );
             }
-
         } catch (error) {
             this.showResult(this.elements.queryResults, `${MESSAGES.ERROR_NETWORK}: ${error.message}`, 'error');
         } finally {
@@ -152,36 +154,14 @@ class PatientDatabaseApp {
     }
 
     /**
-     * Determine HTTP method based on query type
-     */
-    getHttpMethod(query) {
-        const normalizedQuery = query.trim().toUpperCase();
-        return normalizedQuery.startsWith('SELECT') ? 'GET' : 'POST';
-    }
-
-    /**
-     * Send HTTP request to the server
+     * Send HTTP request to the server (always POST JSON)
      */
     async sendRequest(method, query) {
-        let url = this.serverUrl;
-
-        const options = {
-            method: method,
-            headers: {
-                'Content-Type': 'text/plain',
-            }
-        };
-
-        if (method === 'GET') {
-            // For GET requests, send query in URL path (since GET can't have body)
-            url = `${this.serverUrl}/lab5/api/v1/sql/"${encodeURIComponent(query)}"`;
-            // Don't include body for GET requests
-        } else {
-            // POST requests send query in body to base URL
-            options.body = query;
-        }
-
-        const response = await fetch(url, options);
+        const response = await fetch(`${this.serverUrl}/lab5/api/v1/sql`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query })
+        });
 
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
